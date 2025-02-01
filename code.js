@@ -142,10 +142,6 @@ function initialize() {
   middleHeight = canvas.height/2;
   distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
   circleThickness = Math.min(canvas.width, canvas.height)/12;
-  //console.log(middleWidth);
-  //console.log(middleHeight);
-  //console.log(distanceFromCenter)
-  //console.log(circleThickness)
   sectors = EFFECTdrawConcentricRings(dollarAmount, ctxt, distanceFromCenter, circleThickness, middleWidth, middleHeight); 
 }
 window.addEventListener("load", function(event){
