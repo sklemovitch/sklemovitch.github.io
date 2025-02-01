@@ -17,14 +17,11 @@ function EFFECTdrawConcentricRings(quantityArray, context, initialRadius, thickn
     context.fillStyle = color;
     context.beginPath();
     context.arc(centerX, centerY, radius, -1*startAngle, -1*endAngle, true);
-    context.stroke()
     context.lineTo(centerX + Math.cos(-1*endAngle)*(radius+thickness), centerY + Math.sin(-1*endAngle)*(radius+thickness));
-    context.stroke()
     context.arc(centerX, centerY, radius+thickness, -1*endAngle, -1*startAngle, false);
-    context.stroke()
     context.lineTo(centerX + Math.cos(-1*startAngle)*radius, centerY + Math.sin(-1*startAngle)*radius);
-    context.stroke()
-    context.fill()
+    context.stroke();
+    context.fill();
   } 
   //drawApplied takes radius,startAngle,endAngle,color
   const EFFECTdrawApplied = partial(EFFECTdrawRingSector, context, centerX, centerY, thickness);
@@ -109,11 +106,11 @@ function EFFECTdisplaySectorTooltip(centerX, centerY, sectorInfoContainer, secto
 
   function EFFECTfinalize(sectorInfoContainer, sectorInfoArray, mouseX, mouseY) {
     const sector = whichSector(sectorInfoArray);
-    console.log(sector);
     if (sector) {
       return EFFECTcreateToolTip(mouseX, mouseY, sectorInfoContainer, sector.value);
     }
     else {
+      sectorInfoContainer.innerHTML = "";
       return false;
     }
   }
@@ -127,24 +124,35 @@ const body = document.querySelector("body");
 const sectorInfo = document.getElementById("sectorInfo")
 const ctxt = canvas.getContext("2d");
 
-canvas.width = graph.offsetWidth;
-canvas.height = graph.offsetHeight;
-const distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
-const circleThickness = Math.min(canvas.width, canvas.height)/12;
-
-// Parameters for the middle of the circle in the canvas
+// Parameters for the circle in the canvas
 let middleWidth = canvas.width/2;
 let middleHeight = canvas.height/2;
-
+let distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
+let circleThickness = Math.min(canvas.width, canvas.height)/12;
 const dollarAmount = [100,100,200,300,500,800,1300,2100];
 
 let sectors = [];
-window.addEventListener("load", function(event){
+function initialize() {
+  ctxt.clearRect(0,0,canvas.width, canvas.height);
+  canvas.width = 0;
+  canvas.height = 0;
+  canvas.width = graph.offsetWidth;
+  canvas.height = graph.offsetHeight;
   middleWidth = canvas.width/2;
   middleHeight = canvas.height/2;
-  sectors = EFFECTdrawConcentricRings(dollarAmount, ctxt, distanceFromCenter, circleThickness, middleWidth, middleHeight);
-  EFFECTcreateToolTip(100, 100, document.getElementById("sectorInfo"), "Welcome to CostCo", "I love you");
-  
+  distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
+  circleThickness = Math.min(canvas.width, canvas.height)/12;
+  //console.log(middleWidth);
+  //console.log(middleHeight);
+  //console.log(distanceFromCenter)
+  //console.log(circleThickness)
+  sectors = EFFECTdrawConcentricRings(dollarAmount, ctxt, distanceFromCenter, circleThickness, middleWidth, middleHeight); 
+}
+window.addEventListener("load", function(event){
+  initialize();
+})
+window.addEventListener("resize", function(event) {
+  initialize();
 })
 window.addEventListener("mousemove", function(event){
   EFFECTdisplaySectorTooltip(graphInfo.offsetWidth+middleWidth, 

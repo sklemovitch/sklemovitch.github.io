@@ -5,6 +5,7 @@
   align-items: stretch;
 }
 #graphInfo {
+  min-width: 300px;
   flex: 2;
   border: 1px solid black;
 }
@@ -13,10 +14,13 @@
 }
 #sectorInfo {
   position: fixed;
+  background-color: white;
   border: 1px solid black;
 }
-body {
-  height: 100vh;
-  width: 100vw;
+html, body {
+  height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
