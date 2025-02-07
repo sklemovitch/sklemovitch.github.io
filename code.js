@@ -1,19 +1,36 @@
-function SectorInfo(startAngle, endAngle, lowerRadius, upperRadius, value){
+/**
+  * Contains the information used to generate and display a sector
+  * @constructor
+  * @param {number} startAngle - The angle (in radians) of where to start drawing the sector
+  * @param {number} endAngle - The angle (in radians) of where to stop drawing the sector
+  * @param {number} innerRadius - The inner radius of the annulus sector
+  * @param {number} outerRadius - the outer radius of the annulus sector
+  */
+function SectorInfo(startAngle, endAngle, innerRadius , outerRadius, value){
   this.startAngle = startAngle;
   this.endAngle = endAngle;
-  this.lowerRadius = lowerRadius;
-  this.upperRadius = upperRadius;
+  this.innerRadius = innerRadius;
+  this.outerRadius = outerRadius;
   this.value = value;
 }
-//Partially applies functions
+/** Partially applies functions */
 function partial(func, ...args) {
   return function(...moreArgs) {
     return func(...args, ...moreArgs);
   };
 }
 
-function EFFECTdrawConcentricRings(quantityArray, context, initialRadius, thickness, centerX, centerY) {
-  function EFFECTdrawRingSector(context, centerX, centerY, thickness, radius , startAngle, endAngle, color) {
+/**
+  * Draws an annulus with a center at (centerX, centerY) with an innerRadius of innerRadius
+  * @param {number[]} quantityArray - The numbers that determine the size of each sector, 2pi*(quantityArray[i]/total(quantityArray))
+  * @param {Object} context - The canvas 2d context that we are drawing on
+  * @param {number} innerRadius - The inner radius of the annulus for all the sectors
+  * @param {number} thickness - Used to calclate the outer radius, inner radius + thickness = outer radius
+  * @param {number} centerX - The x value of the center point of the annulus
+  * @param {number} centerY - The y value of the center point of the annulus
+  */
+function EFFECTdrawAnnulus(quantityArray, context, innerRadius, thickness, centerX, centerY) {
+  function EFFECTdrawAnnulusSector(context, centerX, centerY, thickness, radius, startAngle, endAngle, color) {
     context.fillStyle = color;
     context.beginPath();
     context.arc(centerX, centerY, radius, -1*startAngle, -1*endAngle, true);
@@ -24,7 +41,7 @@ function EFFECTdrawConcentricRings(quantityArray, context, initialRadius, thickn
     context.fill();
   } 
   //drawApplied takes radius,startAngle,endAngle,color
-  const EFFECTdrawApplied = partial(EFFECTdrawRingSector, context, centerX, centerY, thickness);
+  const EFFECTdrawApplied = partial(EFFECTdrawAnnulus, context, centerX, centerY, thickness);
   // Returns the an array with information about all the sectors
   function EFFECTdrawMultipleSectors(quantityArray, radius, thickness) {
     let total = 0;
@@ -41,23 +58,35 @@ function EFFECTdrawConcentricRings(quantityArray, context, initialRadius, thickn
     }
     return sectorInfoArray;
   } 
-  return EFFECTdrawMultipleSectors(quantityArray, initialRadius, thickness);
+  return EFFECTdrawMultipleSectors(quantityArray, innerRadius, thickness);
 }
-// Handles displaying the tooltip when you hover over a sector, giving you information about the sector
-//ERASES CONTENTS OF THE TOOLTOOLTIP CONTAINER
-function EFFECTcreateToolTip(x,y,toolTipContainer, ...args) {
+/** Styles and creates the contents of a provided container for a tooltip
+  * ERASES CONTENTS OF THE TOOLTOOLTIP CONTAINER
+  * @param {number} x - The number of pixels the top left corner of the element is from the left of your screen
+  * @param {number} y - The number of pixels the top left corner of the element is from the top of your screen
+  * @param {Object} toolTipContainer - The container which we are modifying
+  * @param {...string} innerTexts - The texts inside the tooltips
+  */
+function EFFECTcreateToolTip(x,y,toolTipContainer, ...innerTexts) {
   toolTipContainer.innerHTML = "";
   toolTipContainer.style.left = x + "px";
   toolTipContainer.style.top = y + "px";
   let element;
-  let i = 0;
-  for (const arg of args) {
+  for (const text of innerTexts) {
     element = document.createElement("p");
-    element.textContent = arg;
+    element.textContent = text;
     toolTipContainer.appendChild(element);
-    ++i;
   }
 }
+/**
+  * The function that handles displaying the tooltip when hovering over a sector
+  * @param {number} centerX - The x value of the center of the annulus
+  * @param {number} centerY - The y value of the center of the annulus
+  * @param {Object} sectorInfoContainer - The container for the tooltip of the sector info
+  * @param {Object[]} sectorInfoArray - The array of sectorInfo objects used to determine what info the sector info should display
+  * @param {number} mouseX - The x component of the coordinates of the mouse
+  * @param {number} mouseY - The y component of the coordinates of the mouse
+  */
 function EFFECTdisplaySectorTooltip(centerX, centerY, sectorInfoContainer, sectorInfoArray, mouseX, mouseY) {
   //Takes in a point, this function f has the property that if you have a ray go from the origin to (cos(f(x,y)), sin(f(x,y))), then it will pass through (x,y)
   function rectifiedArctan(x,y) {
@@ -86,7 +115,7 @@ function EFFECTdisplaySectorTooltip(centerX, centerY, sectorInfoContainer, secto
     const distance = Math.sqrt((mouseX-centerX)*(mouseX-centerX) + (mouseY-centerY)*(mouseY-centerY));
     const mouseAngle = rectifiedArctan(mouseX-centerX, centerY-mouseY);//centerY-mouseX because the viewport is from top to bottom
     // If the distance of the mouse is between the inner and outer part of the annulus
-    const inAnnulus = (sectorInfo.lowerRadius < distance) && (distance < sectorInfo.upperRadius);
+    const inAnnulus = (sectorInfo.innerRadius < distance) && (distance < sectorInfo.outerRadius);
     // If the mouse is between the angles
     const inAngle = (sectorInfo.startAngle < mouseAngle) && (mouseAngle < sectorInfo.endAngle);
     // Then it's inside the sector
