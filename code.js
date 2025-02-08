@@ -13,7 +13,7 @@ function SectorInfo(startAngle, endAngle, innerRadius , outerRadius, value){
   this.outerRadius = outerRadius;
   this.value = value;
 }
-/** Partially applies functions */
+/** Partially applies functions, making them easier to read*/
 function partial(func, ...args) {
   return function(...moreArgs) {
     return func(...args, ...moreArgs);
@@ -60,7 +60,8 @@ function EFFECTdrawAnnulus(quantityArray, context, innerRadius, thickness, cente
   } 
   return EFFECTdrawMultipleSectors(quantityArray, innerRadius, thickness);
 }
-/** Styles and creates the contents of a provided container for a tooltip
+/** 
+  * Styles and creates the contents of a provided container for a tooltip
   * ERASES CONTENTS OF THE TOOLTOOLTIP CONTAINER
   * @param {number} x - The number of pixels the top left corner of the element is from the left of your screen
   * @param {number} y - The number of pixels the top left corner of the element is from the top of your screen
@@ -161,6 +162,9 @@ let circleThickness = Math.min(canvas.width, canvas.height)/12;
 const dollarAmount = [100,100,200,300,500,800,1300,2100];
 
 let sectors = [];
+/**
+  * Sets up the size of the annulus using the dimensions of the graph (which are dependent on the dimensions of the window)
+  */
 function initialize() {
   ctxt.clearRect(0,0,canvas.width, canvas.height);
   canvas.width = 0;
