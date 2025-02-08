@@ -41,7 +41,7 @@ function EFFECTdrawAnnulus(quantityArray, context, innerRadius, thickness, cente
     context.fill();
   } 
   //drawApplied takes radius,startAngle,endAngle,color
-  const EFFECTdrawApplied = partial(EFFECTdrawAnnulus, context, centerX, centerY, thickness);
+  const EFFECTdrawApplied = partial(EFFECTdrawAnnulusSector, context, centerX, centerY, thickness);
   // Returns the an array with information about all the sectors
   function EFFECTdrawMultipleSectors(quantityArray, radius, thickness) {
     let total = 0;
@@ -175,7 +175,7 @@ function initialize() {
   middleHeight = canvas.height/2;
   distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
   circleThickness = Math.min(canvas.width, canvas.height)/12;
-  sectors = EFFECTdrawConcentricRings(dollarAmount, ctxt, distanceFromCenter, circleThickness, middleWidth, middleHeight); 
+  sectors = EFFECTdrawAnnulus(dollarAmount, ctxt, distanceFromCenter, circleThickness, middleWidth, middleHeight); 
 }
 window.addEventListener("load", function(event){
   initialize();
