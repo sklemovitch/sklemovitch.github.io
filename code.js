@@ -1,3 +1,32 @@
+class Tree {
+  constructor(label, value, relativeValue) {
+    this.label = label;
+    this.value = value;
+    this.relativeValue = relativeValue;
+    this.children = [];
+  }
+  EFFECTaddChild(tree) {
+    //If the children of the current tree include the name of the tree we are trying to add, then don't add
+    for (const child in this.children) {
+      if (tree.label == child.label) {
+        console.log("Can't push new child");
+        return;
+      }
+    }
+    if (shouldPush) {
+      this.children.push(tree);
+    }
+  EFFECTremoveChildByLabel(label) {
+    // Search through the list and find the element which has the label "label". If not found, then logs that there was no child removed
+    for (let i = 0; i < this.children.length; ++i) {
+      if (this.children[i].label == label) {
+        this.children.splice(i, 1);
+        break;
+      }
+    }
+    console.log("Found no children with the label");
+  }
+}
 /**
   * Contains the information used to generate and display a sector
   * @constructor
