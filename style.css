@@ -17,6 +17,9 @@
   background-color: white;
   border: 1px solid black;
 }
+#childList {
+  list-style-type: none;
+}
 html, body {
   height: 100%;
   width: 100%;
@@ -24,3 +27,7 @@ html, body {
   padding: 0;
   overflow: hidden;
 }
+ul {
+  margin: 10px;
+}
+

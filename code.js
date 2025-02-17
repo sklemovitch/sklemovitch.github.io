@@ -1,8 +1,15 @@
+/**
+  * Contains the information to display the element and store the information, will replace the sector info type
+  * @param {String} label -- Text saying what the element represents
+  * @param {Number} value -- The actual value of the node, is either a leaf or the sum of its children (EX: leaf node has value 10, siblings have value 20 and 30, parent value is 10+20+30=60)
+  * @param {Number} relativeValue -- Used to determine position in sector drawing, is equal to relative value of the parent plus the relative value of the values of the previous tree nodes in the array
+  * @param {Object} children -- The child nodes of the tree
+  */
 class Tree {
-  constructor(label, value, relativeValue) {
+  constructor(label, value) {
     this.label = label;
     this.value = value;
-    this.relativeValue = relativeValue;
+    this.relativeValue = 0;
     this.children = [];
   }
   EFFECTaddChild(tree) {
@@ -13,9 +20,8 @@ class Tree {
         return;
       }
     }
-    if (shouldPush) {
-      this.children.push(tree);
-    }
+    this.children.push(tree);
+  }
   EFFECTremoveChildByLabel(label) {
     // Search through the list and find the element which has the label "label". If not found, then logs that there was no child removed
     for (let i = 0; i < this.children.length; ++i) {
@@ -49,6 +55,37 @@ function partial(func, ...args) {
   };
 }
 
+/*
+ * Empties the listElement and fills it with information about the tree object
+ */
+function displayTreeChildren(listElement, tree, unit) {
+  function createListElement(container, valueName, value) {
+    let newListElement = document.createElement("li");
+    newListElement.innerHTML = valueName.concat(": ", value);
+    container.append(newListElement);
+  }
+  function resultFunc(listElement, tree, unit) {
+    listElement.innerHTML = "";
+    const treeChildren = tree.children;
+    for (let index in tree.children) {
+      const child = treeChildren[index];
+      let newTreeList = document.createElement("ul");
+      createListElement(newTreeList, "Label", child.label);
+      // Why the hell are dollars, like, the only unit written on the left side
+      if (unit == "$") {
+        createListElement(newTreeList, "Value", unit.concat(child.value.toString()));
+      }
+      else {
+        createListElement(newTreeList, "Value", child.value.toString().concat(unit));
+      }
+      let newList = document.createElement("li");
+      newList.class = "no-bullet";
+      newList.append(newTreeList);
+      listElement.append(newList);
+    }
+  }
+  resultFunc(listElement, tree, unit);
+}
 /**
   * Draws an annulus with a center at (centerX, centerY) with an innerRadius of innerRadius
   * @param {number[]} quantityArray - The numbers that determine the size of each sector, 2pi*(quantityArray[i]/total(quantityArray))
@@ -91,7 +128,7 @@ function EFFECTdrawAnnulus(quantityArray, context, innerRadius, thickness, cente
 }
 /** 
   * Styles and creates the contents of a provided container for a tooltip
-  * ERASES CONTENTS OF THE TOOLTOOLTIP CONTAINER
+  * ERASES CONTENTS OF THE TOOLTIP CONTAINER
   * @param {number} x - The number of pixels the top left corner of the element is from the left of your screen
   * @param {number} y - The number of pixels the top left corner of the element is from the top of your screen
   * @param {Object} toolTipContainer - The container which we are modifying
@@ -178,6 +215,7 @@ function EFFECTdisplaySectorTooltip(centerX, centerY, sectorInfoContainer, secto
 //Element and element properties definition
 const canvas = document.getElementById("myCanvas");
 const graphInfo = document.getElementById("graphInfo");
+const childList = document.getElementById("childList");
 const graph = document.getElementById("graph");
 const body = document.querySelector("body");
 const sectorInfo = document.getElementById("sectorInfo")
@@ -190,6 +228,13 @@ let distanceFromCenter = Math.min(canvas.width, canvas.height)/6;
 let circleThickness = Math.min(canvas.width, canvas.height)/12;
 const dollarAmount = [100,100,200,300,500,800,1300,2100];
 
+const unit = "$"
+let tempTree = new Tree("Main", 10, "$");
+let childTree1 = new Tree("Child1", 5, "$");
+let childTree2 = new Tree("Child2", 5, "$");
+tempTree.EFFECTaddChild(childTree1);
+tempTree.EFFECTaddChild(childTree2);
+displayTreeChildren(childList, tempTree, unit);
 let sectors = [];
 /**
   * Sets up the size of the annulus using the dimensions of the graph (which are dependent on the dimensions of the window)
