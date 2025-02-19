@@ -40,8 +40,18 @@ class Tree {
     }
     console.log("Found no children with the label");
   }
-
 }
+
+// Recursion is cool
+function getNthLayer(tree, layer) {
+  if (layer == 0) {
+    return [tree];
+  }
+  else {
+    return tree.children.reduce((acc, cur) => acc.concat(getNthLayer(cur, layer - 1)), []);
+  }
+}
+
 // NOTE: Remove after implementing tree fully
 /**
   * Contains the information used to generate and display a sector
@@ -241,11 +251,19 @@ let circleThickness = Math.min(canvas.width, canvas.height) / 12;
 const dollarAmount = [100, 100, 200, 300, 500, 800, 1300, 2100];
 
 const unit = "$";
-let tempTree = new Tree("Main", 10, "$");
-let childTree1 = new Tree("Child1", 5, "$");
-let childTree2 = new Tree("Child2", 5, "$");
+let tempTree = new Tree("Main", 0);
+let childTree1 = new Tree("Child1", 5);
+let childTree2 = new Tree("Child2", 5);
+let childTree3 = new Tree("Child3", 5);
 tempTree.addChild(childTree1);
 tempTree.addChild(childTree2);
+tempTree.addChild(childTree3);
+childTree1.addChild(new Tree("Child1", 5));
+childTree1.addChild(new Tree("Child2", 5));
+childTree2.addChild(new Tree("Child1", 5));
+childTree2.addChild(new Tree("Child2", 5));
+childTree3.addChild(new Tree("Child1", 5));
+childTree3.addChild(new Tree("Child2", 5));
 displayTreeChildren(childList, tempTree, unit);
 let sectors = [];
 /**
