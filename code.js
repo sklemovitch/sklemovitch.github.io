@@ -1,3 +1,4 @@
+
 /**
   * Contains the information to display the element and store the information, will replace the sector info type
   * @param {String} label -- Text saying what the element represents
@@ -12,6 +13,7 @@ class Tree {
     this.relativeValue = 0;
     this.children = [];
   }
+  // NOTE: This doesn't handle relative values alone, you need to call "cascadeRelativeValue()" on the root node in order to make that work
   addChild(tree) {
     //If the children of the current tree include the name of the tree we are trying to add, then don't add
     // NOTE: Simplify this into a reduce statement
@@ -21,7 +23,6 @@ class Tree {
         return;
       }
     }
-    tree.relativeValue = this.relativeValue + this.children.reduce((acc, cur) => acc + cur.value, 0);
     if (this.children.length == 0) {
       this.value = tree.value;
     }
@@ -41,16 +42,26 @@ class Tree {
     console.log("Found no children with the label");
   }
 }
-
 // Recursion is cool
 function getNthLayer(tree, layer) {
-  if (layer == 0) {
+  if (layer <= 0) {
     return [tree];
   }
   else {
     return tree.children.reduce((acc, cur) => acc.concat(getNthLayer(cur, layer - 1)), []);
   }
 }
+/**
+  * Used to propopgate the correct relative values (as defined in the docs for the tree type)
+  * @param {Object} tree -- The tree in the current step in the process
+  * @param {number} inputRelativeValue -- The relative value that the tree should be assigned
+  */
+function cascadeRelativeValue(tree, inputRelativeValue) {
+  tree.relativeValue = inputRelativeValue;
+  tree.children.reduce((acc, cur) => acc + cascadeRelativeValue(cur, acc), inputRelativeValue);
+  return tree.value;
+}
+
 
 // NOTE: Remove after implementing tree fully
 /**
@@ -252,18 +263,27 @@ const dollarAmount = [100, 100, 200, 300, 500, 800, 1300, 2100];
 
 const unit = "$";
 let tempTree = new Tree("Main", 0);
-let childTree1 = new Tree("Child1", 5);
-let childTree2 = new Tree("Child2", 5);
-let childTree3 = new Tree("Child3", 5);
+let childTree1 = new Tree("Child1", 0);
+let childTree2 = new Tree("Child2", 0);
+let childTree3 = new Tree("Child3", 0);
 tempTree.addChild(childTree1);
+cascadeRelativeValue(tempTree, 0);
 tempTree.addChild(childTree2);
+cascadeRelativeValue(tempTree, 0);
 tempTree.addChild(childTree3);
+cascadeRelativeValue(tempTree, 0);
 childTree1.addChild(new Tree("Child1", 5));
+cascadeRelativeValue(tempTree, 0);
 childTree1.addChild(new Tree("Child2", 5));
+cascadeRelativeValue(tempTree, 0);
 childTree2.addChild(new Tree("Child1", 5));
+cascadeRelativeValue(tempTree, 0);
 childTree2.addChild(new Tree("Child2", 5));
+cascadeRelativeValue(tempTree, 0);
 childTree3.addChild(new Tree("Child1", 5));
+cascadeRelativeValue(tempTree, 0);
 childTree3.addChild(new Tree("Child2", 5));
+cascadeRelativeValue(tempTree, 0);
 displayTreeChildren(childList, tempTree, unit);
 let sectors = [];
 /**
