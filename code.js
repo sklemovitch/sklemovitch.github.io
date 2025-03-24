@@ -29,6 +29,7 @@ function getNthLayer(tree, layer) {
   }
 }
 // NOTE: Could probably use a more efficient algorithm, but this is the easiest implementation
+/*
 function getLayerCount(tree, layer) {
   if (getNthLayer(tree, layer).length == 0) {
     return layer;
@@ -37,6 +38,7 @@ function getLayerCount(tree, layer) {
     return getLayerCount(tree, layer + 1);
   }
 }
+*/
 
 // Contains some redundancy but that's fine (probably)
 function cascadeValue(tree) {
@@ -158,8 +160,11 @@ function displaySectorTooltip(centerX, centerY, sectorInfoContainer, innerRadius
   //Takes in a point, this function f has the property that if you have a ray go from the origin to (cos(f(x,y)), sin(f(x,y))), then it will pass through (x,y)
   // Thanks pythagoras
   const distance = Math.sqrt((mouseX - centerX) * (mouseX - centerX) + (mouseY - centerY) * (mouseY - centerY));
-  const mouseAngle = Math.PI + Math.atan2(mouseX - centerX, centerY - mouseY); //centerY-mouseX because the viewport is from top to bottom
-
+  let mouseAngle = Math.atan2(centerY - mouseY, mouseX - centerX); //centerY-mouseX because the viewport is from top to bottom
+  if (mouseAngle < 0) {
+    mouseAngle += 2 * (Math.PI);
+  }
+  console.log(mouseAngle);
   function isInsideSector(mouseAngle, startAngle, endAngle) {
     // If the distance of the mouse is between the inner and outer part of the annulus (which we already checked in the which sector part)
     // and if the mouse is between the angles
@@ -211,12 +216,6 @@ const graph = document.getElementById("graph");
 const sectorInfo = document.getElementById("sectorInfo");
 const ctxt = canvas.getContext("2d");
 
-// Parameters for the circle in the canvas
-let middleWidth = canvas.width / 2;
-let middleHeight = canvas.height / 2;
-let distanceFromCenter = Math.min(canvas.width, canvas.height) / 6;
-let circleThickness = Math.min(canvas.width, canvas.height) / 12;
-
 const unit = "$";
 const tempTree = new Tree("Main", 0);
 const childTree1 = new Tree("Child1", 0);
@@ -230,7 +229,7 @@ childTree1.addChild(new Tree("Child2", 5), tempTree);
 childTree2.addChild(new Tree("Child1", 5), tempTree);
 childTree2.addChild(new Tree("Child2", 5), tempTree);
 childTree3.addChild(new Tree("Child1", 5), tempTree);
-childTree3.addChild(new Tree("Child2", 5), tempTree);
+childTree3.addChild(new Tree("Child2", 20), tempTree);
 displayTreeChildren(childList, tempTree, unit);
 
 startLayer = 0;
