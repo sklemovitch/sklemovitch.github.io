@@ -59,16 +59,16 @@ function partial(func, ...args) {
  */
 function displayTreeChildren(listElement, tree, unit) {
   function createListElement(container, valueName, value) {
-    let newListElement = document.createElement("li");
+    const newListElement = document.createElement("li");
     newListElement.innerHTML = valueName.concat(value);
     container.append(newListElement);
   }
   function resultFunc(listElement, tree, unit) {
     listElement.innerHTML = "";
     const treeChildren = tree.children;
-    for (let index in tree.children) {
+    for (const index in tree.children) {
       const child = treeChildren[index];
-      let newTreeList = document.createElement("ul");
+      const newTreeList = document.createElement("ul");
       createListElement(newTreeList, "Label: ", child.label);
       // Why the fuck are dollars, like, the only unit written on the left side
       if (unit == "$") {
@@ -79,7 +79,7 @@ function displayTreeChildren(listElement, tree, unit) {
       }
 
       createListElement(newTreeList, "Is leaf: ", child.children.length == 0)
-      let newList = document.createElement("li");
+      const newList = document.createElement("li");
       newList.class = "no-bullet";
       newList.append(newTreeList);
       listElement.append(newList);
@@ -113,12 +113,12 @@ function drawAnnulus(treeLayer, rootValue, context, innerRadius, thickness, cent
   function drawMultipleSectors(treeLayer, rootValue, radius) {
     let accumulatedValue = 0
     for (let i = 0; i < treeLayer.length; ++i) {
-      let startAngle = (accumulatedValue / rootValue) * (2 * Math.PI);
-      let endAngle = ((treeLayer[i].value + accumulatedValue) / rootValue) * (2 * Math.PI);
+      const startAngle = (accumulatedValue / rootValue) * (2 * Math.PI);
+      const endAngle = ((treeLayer[i].value + accumulatedValue) / rootValue) * (2 * Math.PI);
       accumulatedValue += treeLayer[i].value
 
-      let colorValue = ((255 / treeLayer.length) * i).toString();
-      let color = "rgb(".concat(colorValue, ",", colorValue, ",", colorValue, ")");
+      const colorValue = ((255 / treeLayer.length) * i).toString();
+      const color = "rgb(".concat(colorValue, ",", colorValue, ",", colorValue, ")");
       drawApplied(radius, startAngle, endAngle, color);
     }
   }
@@ -170,24 +170,26 @@ function displaySectorTooltip(centerX, centerY, sectorInfoContainer, innerRadius
 
   function whichSector(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd) {
     for (i = layerStart; i <= layerEnd; ++i) {
-      distanceIsCorrect = ((innerRadius + thickness * (i-layerStart)) < distance) && (distance < (innerRadius + (i - layerStart + 1) * thickness));
-      if (distanceIsCorrect) {
-        sectors = getNthLayer(tree, i)
-        if (sectors.length == 0) {
-          return false;
-        }
-        // Maps the subtree to its start and end angles in order to input it into the isInsideSector
-        sectorsAngles = sectors.map((subTree) => [(subTree.relativeValue / tree.value) * Math.PI * 2, ((subTree.relativeValue + subTree.value) / tree.value) * Math.PI * 2]);
-        // NOTE: Could probably implement binary search here, but too lazy
-        for (let j = 0; j < sectors.length; ++j) {
-          if (isInsideSector(mouseAngle, sectorsAngles[j][0], sectorsAngles[j][1])) {
-            return sectors[j];
-          }
+      const distanceIsCorrect = ((innerRadius + thickness * (i-layerStart)) < distance) && (distance < (innerRadius + (i - layerStart + 1) * thickness));
+      if (!distanceIsCorrect) {
+        continue;
+      }
+      sectors = getNthLayer(tree, i)
+      if (sectors.length == 0) {
+        return false;
+      }
+      // NOTE: Could probably implement binary search here, but too lazy
+      let accumulatedValue = 0;
+      for (let j = 0; j < sectors.length; ++j) {
+        const startAngle = (accumulatedValue/tree.value)*2*Math.PI;
+        const endAngle = ((accumulatedValue+sectors[j].value)/tree.value)*2*Math.PI;
+        accumulatedValue += sectors[j].value;
+        if (isInsideSector(mouseAngle, startAngle, endAngle)) {
+          return sectors[j];
         }
       }
     }
   }
-  
 
   function finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd) {
     const sector = whichSector(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd);
@@ -206,7 +208,6 @@ const canvas = document.getElementById("myCanvas");
 const graphInfo = document.getElementById("graphInfo");
 const childList = document.getElementById("childList");
 const graph = document.getElementById("graph");
-const body = document.querySelector("body");
 const sectorInfo = document.getElementById("sectorInfo");
 const ctxt = canvas.getContext("2d");
 
@@ -217,10 +218,10 @@ let distanceFromCenter = Math.min(canvas.width, canvas.height) / 6;
 let circleThickness = Math.min(canvas.width, canvas.height) / 12;
 
 const unit = "$";
-let tempTree = new Tree("Main", 0);
-let childTree1 = new Tree("Child1", 0);
-let childTree2 = new Tree("Child2", 0);
-let childTree3 = new Tree("Child3", 0);
+const tempTree = new Tree("Main", 0);
+const childTree1 = new Tree("Child1", 0);
+const childTree2 = new Tree("Child2", 0);
+const childTree3 = new Tree("Child3", 0);
 tempTree.addChild(childTree1, tempTree);
 tempTree.addChild(childTree2, tempTree);
 tempTree.addChild(childTree3, tempTree);
@@ -252,14 +253,14 @@ function initialize() {
     drawAnnulus(getNthLayer(tempTree, i), tempTree.value, ctxt, distanceFromCenter + (annulusThickness * (i-startLayer)), annulusThickness, middleWidth, middleHeight);
   }
 }
-window.addEventListener("load", function() {
+globalThis.addEventListener("load", function() {
   initialize();
 })
-window.addEventListener("resize", function() {
+globalThis.addEventListener("resize", function() {
   initialize();
 })
-window.addEventListener("mousemove", function(event) {
-  // Change layer start and end later to be dynamic with current tree.
+globalThis.addEventListener("mousemove", function(event) {
+  // Change layer start and end later to be dynamic with current tree. 
   // Preferably, we distribute all this information with a few datatypes in order to reduce the length of this function
   displaySectorTooltip(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, tempTree, event.clientX, event.clientY, startLayer, endLayer);
 })
