@@ -1,20 +1,25 @@
 /**
   * Contains the information to display the element and store the information, will replace the sector info type
-  * @param {String} label         -- Text saying what the element represents
-  * @param {Number} value         -- The actual value of the node, is either a leaf or the sum of its children (EX: leaf node has value 10, siblings have value 20 and 30, parent value is 10+20+30=60)
-  * @param {Object} children      -- The child nodes of the tree
+  * @param {String} label     -- Text saying what the element represents
+  * @param {Number} value     -- The actual value of the node, is either a leaf or the sum of its children (EX: leaf node has value 10, siblings have value 20 and 30, parent value is 10+20+30=60)
+  * @param {Object} children  -- The child nodes of the tree
+  * @param {Object} parent    -- The parent of the node
+  * @param {String} color     -- The color of the node
   */
 class Tree {
   constructor(label, value) {
     this.label = label;
     this.value = value;
     this.children = [];
+    this.color = "";
   }
+  // NOTE: Maybe remove dependency on knowing the parent node?
   addChild(tree, rootNode) {
     //If the children of the current tree include the name of the tree we are trying to add, then don't add
     if (this.children.length == 0) {
       this.value = tree.value;
     }
+    tree.parent = this;
     this.children.push(tree);
     cascadeValue(rootNode);
   }
@@ -56,6 +61,30 @@ function partial(func, ...args) {
   };
 }
 
+// Parses the first argument from a string in the form somefun(firstArg, secondArg...) where firstArg is a number
+// Assumes it's in that form
+function parseNthArg(string, argNum) {
+  let stringPos = 0;
+  for (stringPos; stringPos < string.length; ++stringPos){
+    if (string[stringPos] == '('){
+      break;
+    }
+  }
+  stringPos += 1;
+  let stringAcc = "";
+  argAcc = 0;
+  for (stringPos; argAcc < argNum; ++stringPos) {
+    if (string[stringPos] == ','){
+      argAcc += 1;
+      continue;
+    }
+    if (argAcc == argNum-1) {
+      stringAcc += string[stringPos];
+    }
+  }
+  return stringAcc;
+}
+
 /*
  * Empties the listElement and fills it with information about the tree object
  */
@@ -91,14 +120,16 @@ function displayTreeChildren(listElement, tree, unit) {
 }
 /**
   * Draws an annulus with a center at (centerX, centerY) with an innerRadius of innerRadius
-  * @param {Number[]} quantityArray -- The numbers that determine the size of each sector, 2pi*(quantityArray[i]/total(quantityArray))
+  * @param {Object[]} treeLayer     -- The layer we're drawing
+  * @param {Number} layerNum        -- Which layer (relative to root)
+  * @param {Number} curValue        -- The value of the selected node
   * @param {Object} context         -- The canvas 2d context that we are drawing on
-  * @param {Number} innerRadius     -- The inner radius of the annulus for all the sectors
+  * @param {Number} radius          -- The inner radius of the annulus for all the sectors
   * @param {Number} thickness       -- Used to calclate the outer radius, inner radius + thickness = outer radius
   * @param {Number} centerX         -- The x value of the center point of the annulus
   * @param {Number} centerY         -- The y value of the center point of the annulus
   */
-function drawAnnulus(treeLayer, rootValue, context, innerRadius, thickness, centerX, centerY) {
+function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, centerX, centerY) {
   function drawAnnulusSector(context, centerX, centerY, thickness, radius, startAngle, endAngle, color) {
     context.fillStyle = color;
     context.beginPath();
@@ -111,20 +142,35 @@ function drawAnnulus(treeLayer, rootValue, context, innerRadius, thickness, cent
   }
   //drawApplied takes radius,startAngle,endAngle,color
   const drawApplied = partial(drawAnnulusSector, context, centerX, centerY, thickness);
-  // Returns the an array with information about all the sectors
-  function drawMultipleSectors(treeLayer, rootValue, radius) {
+  //Draws a layer
+  function drawMultipleSectors(treeLayer, layerNum, curValue, radius) {
     let accumulatedValue = 0
+    let color = "";
+    let parentColor = "";
     for (let i = 0; i < treeLayer.length; ++i) {
-      const startAngle = (accumulatedValue / rootValue) * (2 * Math.PI);
-      const endAngle = ((treeLayer[i].value + accumulatedValue) / rootValue) * (2 * Math.PI);
-      accumulatedValue += treeLayer[i].value
-
-      const colorValue = ((255 / treeLayer.length) * i).toString();
-      const color = "rgb(".concat(colorValue, ",", colorValue, ",", colorValue, ")");
-      drawApplied(radius, startAngle, endAngle, color);
+      const startAngle = (accumulatedValue / curValue) * (2 * Math.PI);
+      const endAngle = ((treeLayer[i].value + accumulatedValue) / curValue) * (2 * Math.PI);
+      accumulatedValue += treeLayer[i].value;
+      if (layerNum == 0) {
+        color = "rgb(0,0,0)";
+      }
+      else if (layerNum == 1) {
+        parentColor = treeLayer[i].parent.color;
+        color = "hsl("+Math.floor((360/treeLayer.length)*i)+",100%,50%)";
+      }
+      else if (layerNum % 2 == 0) {
+        parentColor = treeLayer[i].parent.color;
+        color = "hsl("+parseNthArg(parentColor, 1)+",50%,"+(Math.floor((50/treeLayer.length)*i)+20)+"%)"; 
+      }
+      else if (layerNum % 2 == 1) {
+        parentColor = treeLayer[i].parent.color;
+        color = "hsl("+parseNthArg(parentColor, 1)+",25%,"+Math.floor((50/treeLayer.length)*i)+"%)"; 
+      }
+      treeLayer[i].color = color;
+      drawApplied(radius, startAngle, endAngle, treeLayer[i].color);
     }
   }
-  return drawMultipleSectors(treeLayer, rootValue, innerRadius);
+  return drawMultipleSectors(treeLayer, layerNum, curValue, radius);
 }
 /** 
   * Styles and creates the contents of a provided container for a tooltip
@@ -146,25 +192,24 @@ function createToolTip(x, y, toolTipContainer, ...innerTexts) {
   }
 }
 /**
-  * The function that handles displaying the tooltip when hovering over a sector
-  * @param {Number} centerX             - The x value of the center of the annulus
-  * @param {Number} centerY             - The y value of the center of the annulus
-  * @param {Object} sectorInfoContainer - The container for the tooltip of the sector info
-  * @param {Number} innerRadius         - The radius of the negative space in the circle
-  * @param {Number} mouseX              - The x component of the coordinates of the mouse
-  * @param {Number} mouseY              - The y component of the coordinates of the mouse
-  * @param {Number} layerStart          - The layer that we are starting the calculation from
-  * @param {Number} layerEnd            - The layer that we are ending the calculation from
+  * The function that handles displaying the tooltip when hovering over a sector and clicking on one
+  * @param {Number} centerX             -- The x value of the center of the annulus
+  * @param {Number} centerY             -- The y value of the center of the annulus
+  * @param {Object} sectorInfoContainer -- The container for the tooltip of the sector info
+  * @param {Number} innerRadius         -- The radius of the negative space in the circle
+  * @param {Number} mouseX              -- The x component of the coordinates of the mouse
+  * @param {Number} mouseY              -- The y component of the coordinates of the mouse
+  * @param {Number} layerStart          -- The layer that we are starting the calculation from
+  * @param {Number} layerEnd            -- The layer that we are ending the calculation from
+  * @param {Bool} isClick               -- 
   */
-function displaySectorTooltip(centerX, centerY, sectorInfoContainer, innerRadius, thickness, tree, mouseX, mouseY, layerStart, layerEnd) {
-  //Takes in a point, this function f has the property that if you have a ray go from the origin to (cos(f(x,y)), sin(f(x,y))), then it will pass through (x,y)
+function hoverHandler(centerX, centerY, sectorInfoContainer, innerRadius, thickness, tree, mouseX, mouseY, layerStart, depth, isClick) {
   // Thanks pythagoras
   const distance = Math.sqrt((mouseX - centerX) * (mouseX - centerX) + (mouseY - centerY) * (mouseY - centerY));
   let mouseAngle = Math.atan2(centerY - mouseY, mouseX - centerX); //centerY-mouseX because the viewport is from top to bottom
   if (mouseAngle < 0) {
     mouseAngle += 2 * (Math.PI);
   }
-  console.log(mouseAngle);
   function isInsideSector(mouseAngle, startAngle, endAngle) {
     // If the distance of the mouse is between the inner and outer part of the annulus (which we already checked in the which sector part)
     // and if the mouse is between the angles
@@ -173,9 +218,9 @@ function displaySectorTooltip(centerX, centerY, sectorInfoContainer, innerRadius
     return inAngle;
   }
 
-  function whichSector(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd) {
-    for (i = layerStart; i <= layerEnd; ++i) {
-      const distanceIsCorrect = ((innerRadius + thickness * (i-layerStart)) < distance) && (distance < (innerRadius + (i - layerStart + 1) * thickness));
+  function whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth) {
+    for (i = 0; i < depth; ++i) {
+      const distanceIsCorrect = ((innerRadius + thickness * (i)) < distance) && (distance < (innerRadius + (i + 1) * thickness));
       if (!distanceIsCorrect) {
         continue;
       }
@@ -190,23 +235,29 @@ function displaySectorTooltip(centerX, centerY, sectorInfoContainer, innerRadius
         const endAngle = ((accumulatedValue+sectors[j].value)/tree.value)*2*Math.PI;
         accumulatedValue += sectors[j].value;
         if (isInsideSector(mouseAngle, startAngle, endAngle)) {
-          return sectors[j];
+          return [sectors[j], i];
         }
       }
     }
   }
-
-  function finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd) {
-    const sector = whichSector(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd);
-    if (sector) {
-      return createToolTip(mouseX, mouseY, sectorInfoContainer, sector.value);
+  function finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, depth, isClick) {
+    const sectorInfo = whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth);
+    if (sectorInfo) {
+      createToolTip(mouseX, mouseY, sectorInfoContainer, sectorInfo[0].value);
     }
     else {
       sectorInfoContainer.innerHTML = "";
       return false;
     }
+    if (isClick) {
+      return sectorInfo;
+    }
+    else {
+      return [tree, layerStart];
+    }
   }
-  finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, layerEnd);
+
+  return finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, depth, isClick);
 }
 //Element and element properties definition
 const canvas = document.getElementById("myCanvas");
@@ -217,23 +268,24 @@ const sectorInfo = document.getElementById("sectorInfo");
 const ctxt = canvas.getContext("2d");
 
 const unit = "$";
-const tempTree = new Tree("Main", 0);
-const childTree1 = new Tree("Child1", 0);
-const childTree2 = new Tree("Child2", 0);
-const childTree3 = new Tree("Child3", 0);
-tempTree.addChild(childTree1, tempTree);
-tempTree.addChild(childTree2, tempTree);
-tempTree.addChild(childTree3, tempTree);
-childTree1.addChild(new Tree("Child1", 5), tempTree);
-childTree1.addChild(new Tree("Child2", 5), tempTree);
-childTree2.addChild(new Tree("Child1", 5), tempTree);
-childTree2.addChild(new Tree("Child2", 5), tempTree);
-childTree3.addChild(new Tree("Child1", 5), tempTree);
-childTree3.addChild(new Tree("Child2", 20), tempTree);
-displayTreeChildren(childList, tempTree, unit);
-
-startLayer = 0;
-endLayer = 2;
+const rootNode = new Tree("Main", 0);
+let selectedNode = rootNode;
+{
+  const childTree1 = new Tree("Child1", 0);
+  const childTree2 = new Tree("Child2", 0);
+  const childTree3 = new Tree("Child3", 0);
+  rootNode.addChild(childTree1, rootNode);
+  rootNode.addChild(childTree2, rootNode);
+  rootNode.addChild(childTree3, rootNode);
+  childTree1.addChild(new Tree("Child1", 5), rootNode);
+  childTree1.addChild(new Tree("Child2", 5), rootNode);
+  childTree2.addChild(new Tree("Child1", 5), rootNode);
+  childTree2.addChild(new Tree("Child2", 5), rootNode);
+  childTree3.addChild(new Tree("Child1", 5), rootNode);
+  childTree3.addChild(new Tree("Child2", 20), rootNode);
+  displayTreeChildren(childList, rootNode, unit);
+}
+let layerStart = 0;
 
 /**
   * Sets up the size of the annulus using the dimensions of the graph (which are dependent on the dimensions of the window)
@@ -248,8 +300,8 @@ function initialize() {
   middleHeight = canvas.height / 2;
   distanceFromCenter = Math.min(canvas.width, canvas.height) / 6;
   annulusThickness = Math.min(canvas.width, canvas.height) / 12;
-  for (let i = startLayer; i <= endLayer; ++i) {
-    drawAnnulus(getNthLayer(tempTree, i), tempTree.value, ctxt, distanceFromCenter + (annulusThickness * (i-startLayer)), annulusThickness, middleWidth, middleHeight);
+  for (let i = 0; i <= 2; ++i) {
+    drawAnnulus(getNthLayer(selectedNode, i), layerStart+i, selectedNode.value, ctxt, distanceFromCenter + (annulusThickness * i), annulusThickness, middleWidth, middleHeight);
   }
 }
 globalThis.addEventListener("load", function() {
@@ -261,6 +313,19 @@ globalThis.addEventListener("resize", function() {
 globalThis.addEventListener("mousemove", function(event) {
   // Change layer start and end later to be dynamic with current tree. 
   // Preferably, we distribute all this information with a few datatypes in order to reduce the length of this function
-  displaySectorTooltip(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, tempTree, event.clientX, event.clientY, startLayer, endLayer);
+
+  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+3, false);
+  if (result) {
+    selectedNode = result[0];
+  }
+})
+globalThis.addEventListener("mousedown", function(event) {
+  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+2, true);
+  console.log(result);
+  if (result) {
+    selectedNode = result[0];
+    layerStart = result[1];
+  }
+  initialize();
 })
 
