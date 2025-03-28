@@ -85,6 +85,15 @@ function parseNthArg(string, argNum) {
   return stringAcc;
 }
 
+function getChildsPosInParent(parent, child) {
+  for (i = 0; i < parent.children.length; ++i) {
+    if (parent.children[i] == child) {
+      return i;
+    }
+  }
+  return false;
+}
+
 /*
  * Empties the listElement and fills it with information about the tree object
  */
@@ -129,7 +138,7 @@ function displayTreeChildren(listElement, tree, unit) {
   * @param {Number} centerX         -- The x value of the center point of the annulus
   * @param {Number} centerY         -- The y value of the center point of the annulus
   */
-function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, centerX, centerY) {
+function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, centerX, centerY, rootNode) {
   function drawAnnulusSector(context, centerX, centerY, thickness, radius, startAngle, endAngle, color) {
     context.fillStyle = color;
     context.beginPath();
@@ -143,10 +152,9 @@ function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, 
   //drawApplied takes radius,startAngle,endAngle,color
   const drawApplied = partial(drawAnnulusSector, context, centerX, centerY, thickness);
   //Draws a layer
-  function drawMultipleSectors(treeLayer, layerNum, curValue, radius) {
+  function drawMultipleSectors(treeLayer, rootNode, layerNum, curValue, radius) {
     let accumulatedValue = 0
     let color = "";
-    let parentColor = "";
     for (let i = 0; i < treeLayer.length; ++i) {
       const startAngle = (accumulatedValue / curValue) * (2 * Math.PI);
       const endAngle = ((treeLayer[i].value + accumulatedValue) / curValue) * (2 * Math.PI);
@@ -155,22 +163,25 @@ function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, 
         color = "rgb(0,0,0)";
       }
       else if (layerNum == 1) {
-        parentColor = treeLayer[i].parent.color;
-        color = "hsl("+Math.floor((360/treeLayer.length)*i)+",100%,50%)";
+        hue = Math.floor((360/getNthLayer(rootNode,1).length)*getChildsPosInParent(rootNode, treeLayer[i]))
+        color = "hsl("+hue+",100%,50%)";
       }
       else if (layerNum % 2 == 0) {
-        parentColor = treeLayer[i].parent.color;
-        color = "hsl("+parseNthArg(parentColor, 1)+",50%,"+(Math.floor((50/treeLayer.length)*i)+20)+"%)"; 
+        hue = parseNthArg(treeLayer[i].parent.color,1)
+        lighting = Math.floor((50/treeLayer[i].parent.children.length)*getChildsPosInParent(treeLayer[i].parent, treeLayer[i]))+20
+        color = "hsl("+hue+",50%,"+lighting+"%)"; 
       }
       else if (layerNum % 2 == 1) {
-        parentColor = treeLayer[i].parent.color;
-        color = "hsl("+parseNthArg(parentColor, 1)+",25%,"+Math.floor((50/treeLayer.length)*i)+"%)"; 
+        hue = parseNthArg(treeLayer[i].parent.color,1)
+        lighting = Math.floor((50/treeLayer[i].parent.children.length)*getChildsPosInParent(treeLayer[i].parent, treeLayer[i]))
+        color = "hsl("+hue+",25%,"+lighting+"%)"; 
       }
+      console.log(color);
       treeLayer[i].color = color;
       drawApplied(radius, startAngle, endAngle, treeLayer[i].color);
     }
   }
-  return drawMultipleSectors(treeLayer, layerNum, curValue, radius);
+  return drawMultipleSectors(treeLayer, rootNode, layerNum, curValue, radius);
 }
 /** 
   * Styles and creates the contents of a provided container for a tooltip
@@ -241,8 +252,9 @@ function hoverHandler(centerX, centerY, sectorInfoContainer, innerRadius, thickn
     }
   }
   function finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, depth, isClick) {
-    const sectorInfo = whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth);
+    let sectorInfo = whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth);
     if (sectorInfo) {
+      sectorInfo[1] += layerStart;
       createToolTip(mouseX, mouseY, sectorInfoContainer, sectorInfo[0].value);
     }
     else {
@@ -301,7 +313,7 @@ function initialize() {
   distanceFromCenter = Math.min(canvas.width, canvas.height) / 6;
   annulusThickness = Math.min(canvas.width, canvas.height) / 12;
   for (let i = 0; i <= 2; ++i) {
-    drawAnnulus(getNthLayer(selectedNode, i), layerStart+i, selectedNode.value, ctxt, distanceFromCenter + (annulusThickness * i), annulusThickness, middleWidth, middleHeight);
+    drawAnnulus(getNthLayer(selectedNode, i), layerStart+i, selectedNode.value, ctxt, distanceFromCenter + (annulusThickness * i), annulusThickness, middleWidth, middleHeight, rootNode);
   }
 }
 globalThis.addEventListener("load", function() {
