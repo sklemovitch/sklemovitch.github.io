@@ -7,11 +7,10 @@
   * @param {String} color     -- The color of the node
   */
 class Tree {
-  constructor(label, value) {
+  constructor(label, value, children = []) {
     this.label = label;
     this.value = value;
-    this.children = [];
-    this.color = "";
+    this.children = children;
   }
   // NOTE: Maybe remove dependency on knowing the parent node?
   addChild(tree, rootNode) {
@@ -24,6 +23,7 @@ class Tree {
     cascadeValue(rootNode);
   }
 }
+
 // Recursion is cool
 function getNthLayer(tree, layer) {
   if (layer <= 0) {
@@ -33,17 +33,6 @@ function getNthLayer(tree, layer) {
     return tree.children.reduce((acc, cur) => acc.concat(getNthLayer(cur, layer - 1)), []);
   }
 }
-// NOTE: Could probably use a more efficient algorithm, but this is the easiest implementation
-/*
-function getLayerCount(tree, layer) {
-  if (getNthLayer(tree, layer).length == 0) {
-    return layer;
-  }
-  else {
-    return getLayerCount(tree, layer + 1);
-  }
-}
-*/
 
 // Contains some redundancy but that's fine (probably)
 function cascadeValue(tree) {
@@ -176,7 +165,6 @@ function drawAnnulus(treeLayer, layerNum, curValue, context, radius, thickness, 
         lighting = Math.floor((50/treeLayer[i].parent.children.length)*getChildsPosInParent(treeLayer[i].parent, treeLayer[i]))
         color = "hsl("+hue+",25%,"+lighting+"%)"; 
       }
-      console.log(color);
       treeLayer[i].color = color;
       drawApplied(radius, startAngle, endAngle, treeLayer[i].color);
     }
@@ -235,7 +223,7 @@ function hoverHandler(centerX, centerY, sectorInfoContainer, innerRadius, thickn
       if (!distanceIsCorrect) {
         continue;
       }
-      sectors = getNthLayer(tree, i)
+      sectors = getNthLayer(tree, i);
       if (sectors.length == 0) {
         return false;
       }
@@ -252,7 +240,7 @@ function hoverHandler(centerX, centerY, sectorInfoContainer, innerRadius, thickn
     }
   }
   function finalize(tree, innerRadius, thickness, distance, mouseAngle, layerStart, depth, isClick) {
-    let sectorInfo = whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth);
+    const sectorInfo = whichSector(tree, innerRadius, thickness, distance, mouseAngle, depth);
     if (sectorInfo) {
       sectorInfo[1] += layerStart;
       createToolTip(mouseX, mouseY, sectorInfoContainer, sectorInfo[0].value);
@@ -297,7 +285,9 @@ let selectedNode = rootNode;
   childTree3.addChild(new Tree("Child2", 20), rootNode);
   displayTreeChildren(childList, rootNode, unit);
 }
+
 let layerStart = 0;
+const displayDepth = 3;
 
 /**
   * Sets up the size of the annulus using the dimensions of the graph (which are dependent on the dimensions of the window)
@@ -312,7 +302,7 @@ function initialize() {
   middleHeight = canvas.height / 2;
   distanceFromCenter = Math.min(canvas.width, canvas.height) / 6;
   annulusThickness = Math.min(canvas.width, canvas.height) / 12;
-  for (let i = 0; i <= 2; ++i) {
+  for (let i = 0; i < displayDepth; ++i) {
     drawAnnulus(getNthLayer(selectedNode, i), layerStart+i, selectedNode.value, ctxt, distanceFromCenter + (annulusThickness * i), annulusThickness, middleWidth, middleHeight, rootNode);
   }
 }
@@ -326,13 +316,13 @@ globalThis.addEventListener("mousemove", function(event) {
   // Change layer start and end later to be dynamic with current tree. 
   // Preferably, we distribute all this information with a few datatypes in order to reduce the length of this function
 
-  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+3, false);
+  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+displayDepth, false);
   if (result) {
     selectedNode = result[0];
   }
 })
 globalThis.addEventListener("mousedown", function(event) {
-  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+2, true);
+  result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+displayDepth, true);
   console.log(result);
   if (result) {
     selectedNode = result[0];
