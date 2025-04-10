@@ -20,6 +20,26 @@
 #childList {
   list-style-type: none;
 }
+.modal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid black;
+  z-index: 10;
+}
+.modal-header {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+}
+.close-button {
+  aspect-ratio: 1/1;
+  width: 10%;
+  height: auto;
+  padding: 1px;
+}
 html, body {
   height: 100%;
   width: 100%;

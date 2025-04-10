@@ -313,9 +313,6 @@ globalThis.addEventListener("resize", function() {
   initialize();
 })
 globalThis.addEventListener("mousemove", function(event) {
-  // Change layer start and end later to be dynamic with current tree. 
-  // Preferably, we distribute all this information with a few datatypes in order to reduce the length of this function
-
   result = hoverHandler(graphInfo.offsetWidth + middleWidth, middleHeight, sectorInfo, distanceFromCenter, annulusThickness, selectedNode, event.clientX, event.clientY, layerStart, layerStart+displayDepth, false);
   if (result) {
     selectedNode = result[0];
